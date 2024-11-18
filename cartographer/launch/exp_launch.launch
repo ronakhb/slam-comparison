@@ -1,0 +1,42 @@
+<!-- -*- mode: XML -*- -->
+<!-- run velodyne_pointcloud/CloudNodelet in a nodelet manager for an HDL-32E -->
+
+<launch>
+  <param name="/use_sim_time" value="true" />
+
+  <!-- **** Start: Robot Description ********************************************************************************************* -->
+  <param name="robot_description" textfile="$(find cartographer_ros)/urdf/kitti.urdf" />
+
+  <!-- **** Start: Robot Description ********************************************************************************************* -->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+
+  <!-- **** Start: Cartographer             ************************************************************************************ -->
+ <node name="cartographer_offline_node" pkg="cartographer_ros"
+	type="cartographer_offline_node" 
+  args="-configuration_directory $(find cartographer_ros)/configuration_files
+        -configuration_basenames kitti_3d_modi.lua
+        -bag_filenames $(arg bag_filenames)"
+	output="screen">
+    <remap from="imu" to="/kitti/oxts/imu" />
+    <remap from="points2" to="/kitti/velo/pointcloud" />
+    <remap from="fix" to="/kitti/oxts/gps/fix" />
+  </node>
+
+  <!-- Resolution Default 0.05, raised to 1.00 -->
+  <node name="cartographer_occupancy_grid_node" pkg="cartographer_ros" type="cartographer_occupancy_grid_node" args="-resolution 1.00" />
+
+<!--  <node name="rviz" pkg="rviz" type="rviz" required="true" args="-d $(find gmu)/configuration_files/kitti.rviz" />  -->
+
+  <node name="rviz" pkg="rviz" type="rviz" required="true"
+    args="-d $(find cartographer_ros)/configuration_files/kitti_3d_rgb.rviz">
+  </node>
+  
+  <node name="tf_remove_frames" pkg="cartographer_ros"
+      type="tf_remove_frames.py">
+    <remap from="tf_out" to="/tf" />
+    <rosparam param="remove_frames">
+      - world
+    </rosparam>
+  </node>
+
+</launch>
